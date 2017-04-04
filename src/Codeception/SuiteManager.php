@@ -91,7 +91,7 @@ class SuiteManager
 
     public function loadTests($path = null)
     {
-        $testLoader = new Loader($this->settings);
+        $testLoader = new Loader($this->settings, $this->settings);
         $testLoader->loadTests($path, $this->settings);
 
         $tests = $testLoader->getTests();
