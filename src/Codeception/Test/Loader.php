@@ -6,6 +6,7 @@ use Codeception\Test\Loader\Cest as CestLoader;
 use Codeception\Test\Loader\Unit as UnitLoader;
 use Codeception\Test\Loader\Gherkin as GherkinLoader;
 use Symfony\Component\Finder\Finder;
+use Codeception\Util\OrderingSort;
 
 /**
  * Loads all Codeception supported test formats from a directory.
@@ -43,10 +44,12 @@ class Loader
     protected $formats = [];
     protected $tests = [];
     protected $path;
+    protected $config;
 
-    public function __construct(array $suiteSettings)
+    public function __construct(array $suiteSettings, $config = null)
     {
         $this->path = $suiteSettings['path'];
+        $this->config = $config;
         $this->formats = [
             new CeptLoader(),
             new CestLoader(),
@@ -123,16 +126,44 @@ class Loader
             return $this->loadTest($fileName);
         }
 
+		$ordering = null;
+
         $finder = Finder::create()->files()->sortByName()->in($this->path)->followLinks();
+
+		if(array_key_exists('order', $this->config)) {
+
+			// TODO remove dependency this path
+			$dir = __DIR__.'/../../../../../../tests/acceptance/';
+			$sortReference = __DIR__.'/../../../../../..'.$this->config['order'];
+
+			$ordering = new OrderingSort($dir, '*.php', $sortReference);
+
+			$preOrder = $ordering->sortResultList();
+			$preOrder = array_flip($preOrder);
+		}
 
         foreach ($this->formats as $format) {
             /** @var $format Loader  **/
             $formatFinder = clone($finder);
             $testFiles = $formatFinder->name($format->getPattern());
-            foreach ($testFiles as $test) {
-                $pathname = str_replace(["//", "\\\\"], ["/", "\\"], $test->getPathname());
-                $format->loadTests($pathname);
-            }
+
+			if (array_key_exists('order', $this->config)) {
+				foreach ($preOrder as $key => &$value) {
+					foreach ($testFiles as $test) {
+						$pos = strpos($test->getPathname(), $key);
+						if ($pos !== false) {
+							$pathname = str_replace(["//", "\\\\"], ["/", "\\"], $test->getPathname());
+							$format->loadTests($pathname);
+						}
+					}
+				}
+			} else {
+				foreach ($testFiles as $test) {
+						$pathname = str_replace(["//", "\\\\"], ["/", "\\"], $test->getPathname());
+						$format->loadTests($pathname);
+				}
+			}
+
             $this->tests = array_merge($this->tests, $format->getTests());
         }
     }

@@ -335,7 +335,7 @@ class WebDriver extends CodeceptionModule implements
             return;
         }
 
-        $firefox_profile = $this->config['capabilities']['firefox_profile'];
+		$firefox_profile = __DIR__."/../../../../../../".$this->config['capabilities']['firefox_profile'];
         if (file_exists($firefox_profile) === false) {
             throw new ModuleConfigException(
                 __CLASS__,
@@ -372,13 +372,28 @@ class WebDriver extends CodeceptionModule implements
     public function _failed(TestInterface $test, $fail)
     {
         $this->debugWebDriverLogs($test);
-        $filename = preg_replace('~\W~', '.', Descriptor::getTestSignature($test));
+
+		$winSize = '';
+
+		if (gettype($this->config['window_size']) !== "boolean") {
+			if ($this->config['window_size'] !== 'maximize') {
+				$size = explode('x', $this->config['window_size']);
+				if (count($size) >= 1) {
+					$winSize = $this->config['window_size'];
+				}
+			}
+		}
+
+
+
+        $filename = preg_replace('~\W~', '.', Descriptor::getTestSignature($test)).$winSize. '.fail';
         $outputDir = codecept_output_dir();
-        $this->_saveScreenshot($report = $outputDir . mb_strcut($filename, 0, 245, 'utf-8') . '.fail.png');
+        $this->_saveScreenshot($report = $outputDir . mb_strcut($filename, 0, 245, 'utf-8') .'.png');
         $test->getMetadata()->addReport('png', $report);
-        $this->_savePageSource($report = $outputDir . mb_strcut($filename, 0, 244, 'utf-8') . '.fail.html');
+        $this->_savePageSource($report = $outputDir . mb_strcut($filename, 0, 244, 'utf-8') .'.html');
         $test->getMetadata()->addReport('html', $report);
         $this->debug("Screenshot and page source were saved into '$outputDir' dir");
+		$this->debug("Screenshot name: ".$filename. '.png');
     }
 
     /**

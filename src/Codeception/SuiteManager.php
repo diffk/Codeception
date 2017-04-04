@@ -92,7 +92,7 @@ class SuiteManager
     public function loadTests($path = null)
     {
         $testLoader = new Loader($this->settings);
-        $testLoader->loadTests($path);
+        $testLoader->loadTests($path, $this->settings);
 
         $tests = $testLoader->getTests();
         if ($this->settings['shuffle']) {
